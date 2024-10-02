@@ -35,7 +35,7 @@
         ></app-menu>
       </div>
       <div>
-        <p v-html="$t('pages.index.hello', { name })"></p>
+        <p v-html="$t('pages.index.hello', { name: mainStore.name })"></p>
         <p
           class="sm:hidden"
           v-html="$t('pages.index.summary_small', sensorAndSitParams)"
@@ -58,7 +58,7 @@
     </button>
 
     <!-- temperature instant values -->
-    <div v-if="!isAdmin" class="flex flex-wrap justify-center">
+    <div v-if="!mainStore.isAdmin" class="flex flex-wrap justify-center">
       <section
         v-for="(resource, i) in prepedTemperatureResources"
         :key="i"
@@ -276,6 +276,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import AppHeader from '../components/app-header.vue'
 import AppMenu from '../components/app-menu.vue'
 
@@ -302,7 +305,7 @@ export default {
     return {
       title: `${this.$t('pages.index.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -326,7 +329,7 @@ export default {
     ])
 
     // don't setup temp update if user is admin
-    if (this.isAdmin) {
+    if (this.mainStore.isAdmin) {
       return
     }
 
@@ -355,21 +358,21 @@ export default {
     this.timeout = setTimeout(() => {
       this.updateCurrentTemperatures()
       if (this.prepedTemperatureResources.length > 0) {
-        this.$store.dispatch('showMessage', {
-          message: this.$t('pages.index.temps_updated'),
-          isError: false,
-          time: 2000,
-        })
+        this.mainStore.showMessage(
+          this.$t('pages.index.temps_updated'),
+          false,
+          2000
+        )
       }
 
       this.interval = setInterval(() => {
         this.updateCurrentTemperatures()
         if (this.prepedTemperatureResources.length > 0) {
-          this.$store.dispatch('showMessage', {
-            message: this.$t('pages.index.temps_updated'),
-            isError: false,
-            time: 2000,
-          })
+          this.mainStore.showMessage(
+            this.$t('pages.index.temps_updated'),
+            false,
+            2000
+          )
         }
       }, Duration.fromObject({ minutes: 30 }).as('milliseconds'))
     }, waitTime.as('milliseconds'))
@@ -424,17 +427,17 @@ export default {
       // call member method forceUpdate of explore-chart and signature-chart
       Promise.all(this.$refs.charts.map((chart) => chart.forceUpdate())).then(
         () => {
-          this.$store.dispatch('showMessage', {
-            message: this.$t('pages.index.updated_manually'),
-            isError: false,
-            time: 2000,
-          })
+          this.mainStore.showMessage(
+            this.$t('pages.index.updated_manually'),
+            false,
+            2000
+          )
         }
       )
     },
     updateCurrentTemperatures() {
       // don't show current temperature to admins to avoid overhead
-      if (this.isAdmin) {
+      if (this.mainStore.isAdmin) {
         return
       }
 
@@ -489,7 +492,7 @@ export default {
 
         // check if there is an alert for the resource and if the value is outside the range
         this.currentTemperatures[id].alert = alertState.NONE
-        const alerts = this.$store.getters.alerts
+        const alerts = this.mainStore.alerts
         for (const alert of alerts) {
           if (alert.resource_id !== id) {
             continue
@@ -529,23 +532,23 @@ export default {
     },
     generateName(chart) {
       if (chart.type === 'explore') {
-        if (!this.$store.state.dataById.resources) {
+        if (!this.mainStore.dataById.resources) {
           return '...'
         }
 
         return generateExploreChartName(
           chart,
-          this.$store.state.dataById.resources,
+          this.mainStore.dataById.resources,
           this.$i18n
         )
       } else if (chart.type === 'signature') {
-        if (!this.$store.state.dataById.sites) {
+        if (!this.mainStore.dataById.sites) {
           return '...'
         }
 
         return generateSignatureChartName(
           chart,
-          this.$store.state.dataById.sites,
+          this.mainStore.dataById.sites,
           this.$i18n
         )
       }
@@ -558,7 +561,7 @@ export default {
       const newDashboard = JSON.parse(JSON.stringify(this.dashboard))
       newDashboard.charts[index].name = newName
 
-      this.$store.commit('ADD_DASHBOARD_EDIT', { dashboard: newDashboard })
+      this.mainStore.dashboardEdit.undoList.push(newDashboard)
     },
     toFrontEdit(index) {
       const newDashboard = JSON.parse(JSON.stringify(this.dashboard))
@@ -566,7 +569,7 @@ export default {
       const element = newDashboard.charts.splice(index, 1)
       newDashboard.charts.splice(index - 1, 0, element[0])
 
-      this.$store.commit('ADD_DASHBOARD_EDIT', { dashboard: newDashboard })
+      this.mainStore.dashboardEdit.undoList.push(newDashboard)
     },
     toBackEdit(index) {
       const newDashboard = JSON.parse(JSON.stringify(this.dashboard))
@@ -574,17 +577,17 @@ export default {
       const element = newDashboard.charts.splice(index, 1)
       newDashboard.charts.splice(index + 1, 0, element[0])
 
-      this.$store.commit('ADD_DASHBOARD_EDIT', { dashboard: newDashboard })
+      this.mainStore.dashboardEdit.undoList.push(newDashboard)
     },
     deleteEdit(index) {
       const newDashboard = JSON.parse(JSON.stringify(this.dashboard))
 
       newDashboard.charts.splice(index, 1)
 
-      this.$store.commit('ADD_DASHBOARD_EDIT', { dashboard: newDashboard })
+      this.mainStore.dashboardEdit.undoList.push(newDashboard)
     },
     undoEdit() {
-      this.$store.commit('REMOVE_LAST_DASHBOARD_EDIT')
+      this.mainStore.dashboardEdit.undoList.pop()
     },
     tempToggleEdit(id, checked) {
       // the resource is currently checked if not in the excluded list
@@ -607,15 +610,15 @@ export default {
         newDashboard.temps.exclude.push(id)
       }
 
-      this.$store.commit('ADD_DASHBOARD_EDIT', { dashboard: newDashboard })
+      this.mainStore.dashboardEdit.undoList.push(newDashboard)
     },
     async confirmEdit() {
       // check if any changes have been made or not
       if (
         JSON.stringify(this.dashboard) ===
-        JSON.stringify(this.$store.state.data.user.dashboard)
+        JSON.stringify(this.mainStore.data.user.dashboard)
       ) {
-        this.$store.dispatch('validateDashboardChanges')
+        this.mainStore.validateDashboardChanges()
         this.editMode = false
         return
       }
@@ -627,7 +630,7 @@ export default {
           3000
         )
         // don't quit edit mode if there was an error (to not loose the changes)
-        this.$store.dispatch('validateDashboardChanges')
+        this.mainStore.validateDashboardChanges()
         this.editMode = false
         // update data in case we selecteed a new temperature resource
         this.updateCurrentTemperatures()
@@ -646,6 +649,7 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
     periods() {
       return periods
     },
@@ -655,45 +659,26 @@ export default {
     signaturePeriods() {
       return signaturePeriods
     },
-    /**
-     * @returns {string}
-     */
-    name() {
-      return this.$store.getters.name
-    },
-    /**
-     * @returns {number}
-     */
-    numResources() {
-      return this.$store.getters.numResources
-    },
-    /**
-     * @returns {number}
-     */
-    numSites() {
-      return this.$store.getters.numSites
-    },
     sensorAndSitParams() {
       const locale = this.$numberLocale()
       return {
-        sensor: `${this.numResources.toLocaleString(locale)} ${this.$tc(
-          'pages.index.sensor',
-          this.numResources
-        )}`,
-        site: `${this.numSites.toLocaleString(locale)} ${this.$tc(
+        sensor: `${this.mainStore.numResources.toLocaleString(
+          locale
+        )} ${this.$tc('pages.index.sensor', this.mainStore.numResources)}`,
+        site: `${this.mainStore.numSites.toLocaleString(locale)} ${this.$tc(
           'pages.index.site',
-          this.numSites
+          this.mainStore.numSites
         )}`,
       }
     },
     dashboard() {
       return this.editMode
-        ? this.$store.getters.dashboardEditCurrent
-        : this.$store.getters.dashboard
+        ? this.mainStore.dashboardEditCurrent
+        : this.mainStore.dashboard
     },
     temperatureResources() {
-      return this.$store.getters.resources.filter((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+      return this.mainStore.resources.filter((resource) => {
+        const resourceType = this.mainStore.resourceType(resource)
         return resourceType && resourceType.name === 'Temperature'
       })
     },
@@ -703,9 +688,9 @@ export default {
           .map((resource) => {
             let site = null
 
-            if (this.$store.getters.numSites > 1) {
-              const sensor = this.$store.getters.sensor(resource)
-              site = this.$store.getters.site(sensor)
+            if (this.mainStore.numSites > 1) {
+              const sensor = this.mainStore.sensor(resource)
+              site = this.mainStore.site(sensor)
             }
 
             return {
@@ -828,10 +813,7 @@ export default {
       ]
     },
     editHasPrevious() {
-      return this.$store.getters.dashboardUndoList.length > 0
-    },
-    isAdmin() {
-      return this.$store.getters.isAdmin
+      return this.mainStore.dashboardEdit.undoList.length > 0
     },
   },
 }

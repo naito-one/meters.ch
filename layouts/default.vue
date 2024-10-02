@@ -9,7 +9,7 @@
         :locales="locales"
         :label="'global.set_locale'"
         name="page"
-        @change="SET_LOCALE($event)"
+        @change="setLocale($event)"
       ></language-selector>
     </div>
     <main class="flex-grow w-full text-gray-900 px-2 sm:px-6">
@@ -33,7 +33,8 @@
   </div>
 </template>
 <script>
-import { mapMutations } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { useMainStore } from '../store/index'
 
 import MessageBox from '../components/message-box.vue'
 import LanguageSelector from '../components/language-selector.vue'
@@ -41,7 +42,11 @@ import LoadingBar from '../components/loading-bar.vue'
 
 export default {
   methods: {
-    ...mapMutations(['SET_LOCALE']),
+    ...mapActions(useMainStore, [
+      'setLocale',
+      'updateSmallScreen',
+      'addAwaitingEvent',
+    ]),
   },
   components: { LanguageSelector, MessageBox, LoadingBar },
   data() {
@@ -50,18 +55,7 @@ export default {
     }
   },
   computed: {
-    locale() {
-      return this.$store.state.locale
-    },
-    locales() {
-      return this.$store.state.locales
-    },
-    isAppLoading() {
-      return this.$store.state.isAppLoading
-    },
-    isIE() {
-      return this.$store.state.isIE
-    },
+    ...mapState(useMainStore, ['locale', 'locales', 'isAppLoading', 'isIE']),
   },
   mounted() {
     // show loading bar when changing page
@@ -74,11 +68,11 @@ export default {
         navFrom = from.name
         navTo = to.name
 
-        this.$store.dispatch('addAwaitingEvent', {
-          awaitingEvent: new Promise((resolve) => {
+        this.addAwaitingEvent(
+          new Promise((resolve) => {
             resolveFunc = resolve
-          }),
-        })
+          })
+        )
       }
       next()
     })
@@ -95,7 +89,7 @@ export default {
 
     // handle chart axes when resizing
     window.onresize = () => {
-      this.$store.dispatch('updateSmallScreen')
+      this.updateSmallScreen()
     }
   },
 }

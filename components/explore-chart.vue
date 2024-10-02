@@ -12,6 +12,9 @@
   ></basic-chart>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { DateTime } from 'luxon'
 import {
   getPeriod,
@@ -165,11 +168,11 @@ export default {
       const newRawData = []
 
       for (const i in this.resources) {
-        const resource = this.$store.getters.resource({
+        const resource = this.mainStore.resource({
           resource_id: this.resources[i],
         })
 
-        const resourceType = this.$store.getters.resourceType(resource)
+        const resourceType = this.mainStore.resourceType(resource)
 
         // get next hour for sum resources to compute diff
         const isSumResource =
@@ -183,9 +186,9 @@ export default {
 
         let site = null
 
-        if (this.$store.getters.numSites > 1) {
-          const sensor = this.$store.getters.sensor(resource)
-          site = this.$store.getters.site(sensor)
+        if (this.mainStore.numSites > 1) {
+          const sensor = this.mainStore.sensor(resource)
+          site = this.mainStore.site(sensor)
         }
 
         newRawData.push({
@@ -321,18 +324,18 @@ export default {
       })
 
       // by default ticks are shown
-      if (this.$store.getters.smallScreen) {
+      if (this.mainStore.smallScreen) {
         this.hideYTicks()
       }
     },
     waitForData() {
       const mutationsToWaitFor = []
 
-      if (!this.$store.getters.hasResources) {
+      if (!this.mainStore.hasResources) {
         mutationsToWaitFor.push(SET_RESOURCES)
       }
 
-      if (!this.$store.getters.hasResourceTypes) {
+      if (!this.mainStore.hasResourceTypes) {
         mutationsToWaitFor.push(SET_RESOURCE_TYPES)
       }
 
@@ -343,6 +346,7 @@ export default {
 
       this.waiting = true
 
+      // TODO: I'm in trouble
       return waitForMutations(this.$store, mutationsToWaitFor).then(() => {
         this.waiting = false
       })
@@ -407,6 +411,14 @@ export default {
     resourceTypes() {
       this.updateAxes()
     },
+    smallScreen() {
+      // show Y ticks only when the screen is large enough
+      if (this.mainStore.smallScreen) {
+        this.hideYTicks()
+      } else {
+        this.showYTicks()
+      }
+    },
   },
   mounted() {
     this.waitForData().then(() => {
@@ -415,24 +427,17 @@ export default {
       this.updateRawData().then(() => (this.waiting = false), console.error)
     })
 
-    if (this.$store.getters.smallScreen) {
+    if (this.mainStore.smallScreen) {
       this.hideYTicks()
     } else {
       this.showYTicks()
     }
-
-    // show Y ticks only when the screen is large enough
-    this.$store.subscribe(({ type }) => {
-      if (type === SET_SMALL_SCREEN) {
-        if (this.$store.getters.smallScreen) {
-          this.hideYTicks()
-        } else {
-          this.showYTicks()
-        }
-      }
-    })
   },
   computed: {
+    ...mapStores(useMainStore),
+    smallScreen() {
+      return this.mainStore.smallScreen
+    },
     periodOffsetString() {
       return this.$tc(
         'period_offsets.' + reversePeriods[this.period],
@@ -441,10 +446,10 @@ export default {
       )
     },
     locale() {
-      return this.$store.state.locale
+      return this.mainStore.locale
     },
     resourceTypes() {
-      return this.$store.state.data.resourceTypes
+      return this.mainStore.data.resourceTypes
     },
   },
 }

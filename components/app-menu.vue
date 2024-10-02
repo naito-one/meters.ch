@@ -15,6 +15,9 @@
   </nav>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 export default {
   data() {
     return {
@@ -37,11 +40,9 @@ export default {
     }
   },
   computed: {
-    isAdmin() {
-      return this.$store.getters.isAdmin
-    },
+    ...mapStores(useMainStore),
     elements() {
-      return this.isAdmin
+      return this.mainStore.isAdmin
         ? [
             {
               icon: 'security',

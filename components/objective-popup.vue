@@ -128,6 +128,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import {
   formatResource,
   last7DaysPeriod,
@@ -246,6 +249,7 @@ export default {
     document.removeEventListener('keyup', this.escHandler)
   },
   computed: {
+    ...mapStores(useMainStore),
     backClasses() {
       return [
         'fixed',
@@ -292,10 +296,10 @@ export default {
       ].concat(this.show ? ['pointer-events-auto'] : [])
     },
     resource() {
-      return this.$store.getters.resource({ resource_id: this.resource_id })
+      return this.mainStore.resource({ resource_id: this.resource_id })
     },
     symbol() {
-      const resourceType = this.$store.getters.resourceType(this.resource)
+      const resourceType = this.mainStore.resourceType(this.resource)
       return resourceType ? resourceType.symbol : ''
     },
     editMode() {
@@ -305,18 +309,18 @@ export default {
       return this.$t(`pages.objectives.form.${this.type}_compare`)
     },
     allResources() {
-      return this.$store.getters.resources.filter((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+      return this.mainStore.resources.filter((resource) => {
+        const resourceType = this.mainStore.resourceType(resource)
         return resourceType && resourceType.name !== 'Temperature'
       })
     },
     formattedResources() {
       return this.allResources.map((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+        const resourceType = this.mainStore.resourceType(resource)
         let site = null
-        if (this.$store.getters.numSites > 1) {
-          const sensor = this.$store.getters.sensor(resource)
-          site = this.$store.getters.site(sensor)
+        if (this.mainStore.numSites > 1) {
+          const sensor = this.mainStore.sensor(resource)
+          site = this.mainStore.site(sensor)
         }
         return {
           id: resource.id,

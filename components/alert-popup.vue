@@ -167,6 +167,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { formatResource, scrollToTop } from '../assets/utils'
 import SearchSelect from '../components/search-select.vue'
 
@@ -257,6 +260,7 @@ export default {
     document.removeEventListener('keyup', this.escHandler)
   },
   computed: {
+    ...mapStores(useMainStore),
     isCustomTolerance() {
       return this.toleranceRadio === 'custom'
     },
@@ -309,23 +313,23 @@ export default {
       ].concat(this.show ? ['pointer-events-auto'] : [])
     },
     resource() {
-      return this.$store.getters.resource({ resource_id: this.resource_id })
+      return this.mainStore.resource({ resource_id: this.resource_id })
     },
     editMode() {
       return this.mode === 'edit'
     },
     allResources() {
-      return this.$store.getters.resources.filter((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+      return this.mainStore.resources.filter((resource) => {
+        const resourceType = this.mainStore.resourceType(resource)
         return resourceType && resourceType.name === 'Temperature'
       })
     },
     formattedResources() {
       return this.allResources.map((resource) => {
         let site = null
-        if (this.$store.getters.numSites > 1) {
-          const sensor = this.$store.getters.sensor(resource)
-          site = this.$store.getters.site(sensor)
+        if (this.mainStore.numSites > 1) {
+          const sensor = this.mainStore.sensor(resource)
+          site = this.mainStore.site(sensor)
         }
         return {
           id: resource.id,

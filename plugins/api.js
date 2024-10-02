@@ -92,6 +92,8 @@ export default ({ app, store, redirect }, inject) => {
 
     try {
       const parsed = await classic('get', '/users')
+      // TODO: set user manually
+      // TODO: call convertDashboard
       store.commit(SET_USER, { user: parsed[0] })
     } catch (e) {
       throw e
@@ -305,6 +307,8 @@ export default ({ app, store, redirect }, inject) => {
       // new user infos are returned on success
       // if updated user is current user, update his data
       if (payload.id === store.state.data.user.id) {
+        // TODO: set user manually
+        // TODO: call convertDashboard
         store.commit(SET_USER, { user: parsed })
       }
 

@@ -141,6 +141,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { scrollToTop } from '../assets/utils'
 import SearchSelect from '../components/search-select.vue'
 import LanguageSelector from '../components/language-selector.vue'
@@ -186,7 +189,7 @@ export default {
         this.password = ''
         this.passwordConfirmation = ''
         this.isDisabled = false
-        this.locale = this.$store.getters.userLocale
+        this.locale = this.mainStore.userLocale
         // if there is a single client (on-premise), pre-select it
         this.clientId =
           this.formattedClients.length === 1 ? this.formattedClients[0].id : -1
@@ -244,6 +247,7 @@ export default {
     document.removeEventListener('keyup', this.escHandler)
   },
   computed: {
+    ...mapStores(useMainStore),
     backClasses() {
       return [
         'fixed',
@@ -293,10 +297,10 @@ export default {
       return this.mode === 'edit'
     },
     locales() {
-      return this.$store.state.locales
+      return this.mainStore.locales
     },
     formattedClients() {
-      return this.$store.getters.clients.map((client) => ({
+      return this.mainStore.clients.map((client) => ({
         id: client.id,
         value: `${client.number} - ${client.name}`,
       }))

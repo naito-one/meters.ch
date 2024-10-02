@@ -229,6 +229,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { DateTime } from 'luxon'
 
 import AppHeader from '../components/app-header.vue'
@@ -241,7 +244,7 @@ export default {
     return {
       title: `${this.$t('pages.settings.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -260,7 +263,7 @@ export default {
     }
   },
   async mounted() {
-    if (this.$store.getters.rememberMe) {
+    if (this.mainStore.rememberMe) {
       this.loginUrl = '/login?remember-me'
     }
 
@@ -303,15 +306,13 @@ export default {
         )
 
         // save to local store
-        this.$store.dispatch('updateSensorSubscriptions', {
-          sensor_subscriptions: newSensorSubscriptions,
-        })
+        this.mainStore.setSensorSubscriptions(newSensorSubscriptions)
       } catch (e) {
         // failed to put user. error are handled by the put method
       }
     },
     getFormattedSensorResources(sensorId) {
-      const resources = this.$store.getters.resources.filter(
+      const resources = this.mainStore.resources.filter(
         (resource) => resource.sensor_id === sensorId
       )
 
@@ -326,7 +327,7 @@ export default {
           formatResource(
             this.$i18n,
             resource,
-            this.$store.getters.resourceType(resource)
+            this.mainStore.resourceType(resource)
           )
         )
         .join(', ')
@@ -337,13 +338,13 @@ export default {
       // logout on the backend to delete the session
       try {
         const res = await this.$post('/logout', {
-          api_token: this.$store.state.apiToken,
+          api_token: this.mainStore.apiToken,
         })
       } catch (e) {
         console.error(e)
       }
 
-      this.$store.dispatch('logout')
+      this.mainStore.logout()
       this.$router.push(this.loginUrl)
     },
     /**
@@ -356,7 +357,7 @@ export default {
       } else {
         event.currentTarget.dataset.popupShow = 'false'
         // make sure to hide any messages
-        this.$store.dispatch('hideMessage')
+        this.mainStore.hideMessage()
         try {
           await this.$delSession({ id: session.id })
         } catch (e) {}
@@ -384,31 +385,33 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
+
     /**
      * @returns {string}
      */
     name() {
-      return this.$store.getters.name
+      return this.mainStore.name
     },
     clientData() {
       const locale = this.$numberLocale()
       return [
         {
           name: 'pages.settings.infos.data.client_name',
-          value: this.$store.getters.clientName,
+          value: this.mainStore.clientName,
         },
         {
           name: 'pages.settings.infos.data.client_number',
-          value: this.$store.getters.clientNumber,
+          value: this.mainStore.clientNumber,
         },
-        { name: 'global.email', value: this.$store.getters.clientEmail },
+        { name: 'global.email', value: this.mainStore.clientEmail },
         {
           name: 'pages.settings.infos.data.num_sensors',
-          value: this.$store.getters.numResources.toLocaleString(locale),
+          value: this.mainStore.numResources.toLocaleString(locale),
         },
         {
           name: 'pages.settings.infos.data.num_sites',
-          value: this.$store.getters.numSites.toLocaleString(locale),
+          value: this.mainStore.numSites.toLocaleString(locale),
         },
       ]
     },
@@ -416,34 +419,34 @@ export default {
       return [
         {
           name: 'pages.settings.infos.data.user_name',
-          value: this.$store.getters.name,
+          value: this.mainStore.name,
         },
-        { name: 'global.email', value: this.$store.getters.email },
+        { name: 'global.email', value: this.mainStore.email },
         {
           name: 'pages.settings.infos.data.created_at',
-          value: this.$store.getters.accountCreatedAt
+          value: this.mainStore.accountCreatedAt
             .setLocale(this.$dateLocale())
             .toLocaleString(DateTime.DATE_FULL),
         },
       ]
     },
     userLocale() {
-      return this.$store.getters.userLocale
+      return this.mainStore.userLocale
     },
     locales() {
-      return this.$store.state.locales
+      return this.mainStore.locales
     },
     /**
      * @returns {number[]} a list of the ids of the sensors to which the user subscribed to
      */
     sensorSubscriptions() {
-      return this.$store.getters.sensorSubscriptions
+      return this.mainStore.sensorSubscriptions
     },
     sensors() {
-      return this.$store.getters.sensors
+      return this.mainStore.sensors
     },
     sessions() {
-      return this.$store.getters.sessions
+      return this.mainStore.sessions
     },
     formattedSessions() {
       const now = DateTime.local()

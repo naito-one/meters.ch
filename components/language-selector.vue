@@ -6,7 +6,7 @@
       :name="'language-select-' + name"
       :id="'language-select' + name"
       class="px-2 w-15 h-15 font-heading text-sm"
-      @change="$emit('change', { locale: $event.target.value })"
+      @change="$emit('change', $event.target.value)"
       :value="locale"
     >
       <option

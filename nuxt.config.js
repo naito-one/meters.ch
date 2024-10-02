@@ -1,6 +1,4 @@
-import config from './config'
-// copy the correct env file into the static folder
-config()
+import { defineNuxtConfig } from '@nuxt/bridge'
 
 const features = [
   'es2015',
@@ -10,7 +8,7 @@ const features = [
   'IntersectionObserver',
 ].join('%2C')
 
-export default {
+export default defineNuxtConfig({
   ssr: false,
   target: 'static',
   generate: {
@@ -43,27 +41,33 @@ export default {
         src: `https://polyfill.io/v3/polyfill.min.js?features=${features}`,
         body: true,
       },
-      {
-        // import the env file directly
-        src: '/env.js',
-      },
     ],
   },
   /*
    ** Customize the progress-bar color
    */
   loading: { color: '#fff' },
+
+  runtimeConfig: {
+    public: {
+      API_ROOT: process.env.API_ROOT,
+      API_VERSION: process.env.API_VERSION,
+    },
+  },
+
   /*
    ** Global CSS
    */
-  css: [
-    '~/assets/scss/tailwind.scss',
-    '~/assets/scss/icons.scss',
-    '~/assets/scss/components.scss',
-    '~/assets/scss/fonts.scss',
-    '~/assets/scss/styles.scss',
-    '~/assets/scss/chart.scss',
-  ],
+  styleResources: {
+    scss: [
+      '~/assets/scss/tailwind.scss',
+      '~/assets/scss/icons.scss',
+      '~/assets/scss/components.scss',
+      '~/assets/scss/fonts.scss',
+      '~/assets/scss/styles.scss',
+      '~/assets/scss/chart.scss',
+    ],
+  },
   /*
    ** Plugins to load before mounting the App
    */
@@ -82,7 +86,7 @@ export default {
    ** Nuxt.js modules
    */
   modules: [['@nuxtjs/pwa', { workbox: false }]],
-  buildModules: ['nuxt-purgecss'],
+  buildModules: ['nuxt-purgecss', '@nuxtjs/style-resources', '@pinia/nuxt'],
 
   // PWA
   manifest: {
@@ -115,4 +119,4 @@ export default {
      */
     extend(config, ctx) {},
   },
-}
+})

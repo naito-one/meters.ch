@@ -20,6 +20,9 @@
   ></basic-chart>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { DateTime } from 'luxon'
 import {
   getPeriod,
@@ -239,8 +242,8 @@ export default {
       }
 
       // get site meteo readings
-      const site = this.$store.getters.site({ site_id: this.site })
-      const meteoLocation = this.$store.getters.meteoLocation(site)
+      const site = this.mainStore.site({ site_id: this.site })
+      const meteoLocation = this.mainStore.meteoLocation(site)
 
       const meteoReadings = await this.$getMeteoReadings(
         meteoLocation.id,
@@ -507,12 +510,12 @@ export default {
       })
     },
     updateAxes() {
-      if (!this.$store.getters.hasResourceTypes) {
+      if (!this.mainStore.hasResourceTypes) {
         return
       }
 
-      const resourceType = this.$store.getters.resourceType(
-        this.$store.state.dataById.resources[this.heater]
+      const resourceType = this.mainStore.resourceType(
+        this.mainStore.dataById.resources[this.heater]
       )
 
       // keep symbol for tooltip
@@ -521,22 +524,22 @@ export default {
       this.yAxes = [symbolToAxis(resourceType.symbol, 'left', false, true)]
 
       // by default ticks are shown
-      if (this.$store.getters.smallScreen) {
+      if (this.mainStore.smallScreen) {
         this.hideYTicks()
       }
     },
     waitForData() {
       const mutationsToWaitFor = []
 
-      if (!this.$store.getters.hasMeteoLocations) {
+      if (!this.mainStore.hasMeteoLocations) {
         mutationsToWaitFor.push(SET_METEO_LOCATIONS)
       }
 
-      if (!this.$store.getters.hasSites) {
+      if (!this.mainStore.hasSites) {
         mutationsToWaitFor.push(SET_SITES)
       }
 
-      if (!this.$store.getters.hasResourceTypes) {
+      if (!this.mainStore.hasResourceTypes) {
         mutationsToWaitFor.push(SET_RESOURCE_TYPES)
       }
 
@@ -547,6 +550,7 @@ export default {
 
       this.waiting = true
 
+      // TODO: I'm in trouble
       return waitForMutations(this.$store, mutationsToWaitFor).then(() => {
         this.waiting = false
       })
@@ -664,6 +668,14 @@ export default {
       }
       this.reTranslate()
     },
+    smallScreen() {
+      // show Y ticks only when the screen is large enough
+      if (this.mainStore.smallScreen) {
+        this.hideYTicks()
+      } else {
+        this.showYTicks()
+      }
+    },
   },
   mounted() {
     if (this.isQueryValid) {
@@ -674,24 +686,17 @@ export default {
       })
     }
 
-    if (this.$store.getters.smallScreen) {
+    if (this.mainStore.smallScreen) {
       this.hideYTicks()
     } else {
       this.showYTicks()
     }
-
-    // show Y ticks only when the screen is large enough
-    this.$store.subscribe(({ type }) => {
-      if (type === SET_SMALL_SCREEN) {
-        if (this.$store.getters.smallScreen) {
-          this.hideYTicks()
-        } else {
-          this.showYTicks()
-        }
-      }
-    })
   },
   computed: {
+    ...mapStores(useMainStore),
+    smallScreen() {
+      return this.mainStore.smallScreen
+    },
     periodOffsetString() {
       return this.$tc(
         'period_offsets.' + reversePeriods[this.period],
@@ -700,10 +705,10 @@ export default {
       )
     },
     locale() {
-      return this.$store.state.locale
+      return this.mainStore.locale
     },
     resourceTypes() {
-      return this.$store.state.data.resourceTypes
+      return this.mainStore.data.resourceTypes
     },
     isQueryValid() {
       return this.site !== -1 && this.temperature !== -1 && this.heater !== -1

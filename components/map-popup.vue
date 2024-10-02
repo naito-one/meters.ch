@@ -18,6 +18,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { formatResource } from '../assets/utils'
 export default {
   props: {
@@ -27,11 +30,12 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
     site() {
-      return this.$store.getters.site(this.$store.getters.sensor(this.resource))
+      return this.mainStore.site(this.mainStore.sensor(this.resource))
     },
     resourceType() {
-      return this.$store.getters.resourceType(this.resource)
+      return this.mainStore.resourceType(this.resource)
     },
     formattedResource() {
       if (this.resource === null) {

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isAdmin">
+  <div v-if="mainStore.isAdmin">
     <app-header
       :title="$t('pages.admin.title')"
       :description="$t('pages.admin.description')"
@@ -52,13 +52,16 @@
     <admin-user-popup
       :show="show"
       :mode="mode"
-      :current="id === -1 ? null : $store.getters.user({ user_id: id })"
+      :current="id === -1 ? null : mainStore.user({ user_id: id })"
       @cancel="popupCancel"
       @confirm="popupConfirm"
     ></admin-user-popup>
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { DateTime } from 'luxon'
 
 import AppHeader from '../components/app-header.vue'
@@ -71,7 +74,7 @@ export default {
     return {
       title: `${this.$t('pages.admin.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -86,7 +89,7 @@ export default {
   async mounted() {
     await Promise.all([this.$getUser(), this.$getUsers(), this.$getClients()])
 
-    if (!this.isAdmin) {
+    if (!this.mainStore.isAdmin) {
       this.$router.replace('/').catch(handleNavigationError)
     }
   },
@@ -110,7 +113,7 @@ export default {
     },
     create() {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.mode = 'create'
       this.show = true
@@ -119,7 +122,7 @@ export default {
     },
     update(id) {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.mode = 'edit'
       this.id = id
@@ -128,7 +131,7 @@ export default {
     },
     async del(id) {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       try {
         await this.$delUser({ id })
@@ -174,12 +177,10 @@ export default {
     },
   },
   computed: {
-    isAdmin() {
-      return this.$store.getters.isAdmin
-    },
+    ...mapStores(useMainStore),
     users() {
-      return this.$store.getters.users.map((user) => {
-        const client = this.$store.getters.client(user)
+      return this.mainStore.users.map((user) => {
+        const client = this.mainStore.client(user)
         return {
           id: user.id,
           name: user.name,

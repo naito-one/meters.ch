@@ -186,7 +186,9 @@
   </div>
 </template>
 <script>
-import { DateTime } from 'luxon'
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import {
   reversePeriods,
   reverseAgregations,
@@ -211,7 +213,7 @@ export default {
     return {
       title: `${this.$t('pages.explore.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -253,9 +255,9 @@ export default {
     // if we still don't have any resource shown, try to use the first one
     if (
       this.resources.length === 0 &&
-      this.$store.state.data.resources.length > 0
+      this.mainStore.data.resources.length > 0
     ) {
-      this.resources = [this.$store.state.data.resources[0].id]
+      this.resources = [this.mainStore.data.resources[0].id]
     }
 
     this.setQuery()
@@ -312,17 +314,13 @@ export default {
           .map((id) => parseInt(id))
           .filter((id) => {
             return (
-              !isNaN(id) &&
-              this.$store.state.dataById.resources[id] !== undefined
+              !isNaN(id) && this.mainStore.dataById.resources[id] !== undefined
             )
           })
       } else {
         // if is contains a single value, it will parse as a single number
         const id = parseInt(resources)
-        if (
-          !isNaN(id) &&
-          this.$store.state.dataById.resources[id] !== undefined
-        ) {
+        if (!isNaN(id) && this.mainStore.dataById.resources[id] !== undefined) {
           this.resources = [id]
         }
       }
@@ -374,10 +372,10 @@ export default {
         resources: this.resources,
       }
 
-      this.$store.commit('ADD_DASHBOARD_CHART', { element: payload })
+      this.mainStore.data.user.dashboard.charts.push(payload)
 
       this.$putUser(
-        { dashboard: JSON.stringify(this.$store.getters.dashboard) },
+        { dashboard: JSON.stringify(this.mainStore.dashboard) },
         this.$t('api.dashboard_updated'),
         3000
       )
@@ -412,6 +410,7 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
     isLastPeriodOffset() {
       return this.offset === 0
     },
@@ -429,12 +428,12 @@ export default {
       )
     },
     formattedResources() {
-      return this.$store.getters.resources.map((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+      return this.mainStore.resources.map((resource) => {
+        const resourceType = this.mainStore.resourceType(resource)
         let site = null
-        if (this.$store.getters.numSites > 1) {
-          const sensor = this.$store.getters.sensor(resource)
-          site = this.$store.getters.site(sensor)
+        if (this.mainStore.numSites > 1) {
+          const sensor = this.mainStore.sensor(resource)
+          site = this.mainStore.site(sensor)
         }
         return {
           id: resource.id,
@@ -447,7 +446,7 @@ export default {
         return ''
       }
 
-      if (!this.$store.state.dataById.resources) {
+      if (!this.mainStore.dataById.resources) {
         return ''
       }
 
@@ -457,7 +456,7 @@ export default {
           period: reversePeriods[this.period],
           resources: this.resources,
         },
-        this.$store.state.dataById.resources,
+        this.mainStore.dataById.resources,
         this.$i18n
       )
     },

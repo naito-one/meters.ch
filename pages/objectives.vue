@@ -52,20 +52,22 @@
     <objective-popup
       :show="show"
       :mode="mode"
-      :current="$store.getters.objective({ objective_id: id })"
+      :current="mainStore.objective({ objective_id: id })"
       @cancel="popupCancel"
       @confirm="popupConfirm"
     ></objective-popup>
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import {
   formatResource,
   toClosestSuffixe,
   decimalDefaultFormat,
   handleNavigationError,
 } from '../assets/utils'
-import { DateTime } from 'luxon'
 
 import AppHeader from '../components/app-header.vue'
 import ObjectivePopup from '../components/objective-popup.vue'
@@ -76,7 +78,7 @@ export default {
     return {
       title: `${this.$t('pages.objectives.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -117,7 +119,7 @@ export default {
     },
     create() {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.mode = 'create'
       this.show = true
@@ -126,7 +128,7 @@ export default {
     },
     update(id) {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.mode = 'edit'
       this.id = id
@@ -135,7 +137,7 @@ export default {
     },
     del(id) {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.$delObjective({ id })
     },
@@ -169,21 +171,23 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
+
     objectives() {
       const locale = this.$numberLocale()
-      return this.$store.getters.objectives.map((objective) => {
+      return this.mainStore.objectives.map((objective) => {
         const out = {
           id: objective.id,
           value: '',
         }
 
-        const resource = this.$store.getters.resource(objective)
+        const resource = this.mainStore.resource(objective)
 
         if (resource === null) {
           return out
         }
 
-        const resourceType = this.$store.getters.resourceType(resource)
+        const resourceType = this.mainStore.resourceType(resource)
 
         if (resourceType === null) {
           return out

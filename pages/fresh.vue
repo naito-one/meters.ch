@@ -81,6 +81,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { handleNavigationError } from '../assets/utils'
 export default {
   middleware: ['has-verify-token', 'not-auth'],
@@ -88,7 +91,7 @@ export default {
     return {
       title: `${this.$t('pages.fresh.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -128,6 +131,9 @@ export default {
       this.$router.replace(route).catch(handleNavigationError)
     },
   },
+  computed: {
+    ...mapStores(useMainStore),
+  },
   methods: {
     async reset(event) {
       event.preventDefault()
@@ -138,7 +144,7 @@ export default {
       const rememberMe = event.target[2].checked
 
       // hide a potential message
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       try {
         const res = await this.$post('/reset', {
@@ -157,15 +163,9 @@ export default {
           if (parsed.errors) {
             // get and show the first error message
             const firstError = Object.values(parsed.errors)[0][0]
-            this.$store.dispatch('showMessage', {
-              message: firstError,
-              isError: true,
-            })
+            this.mainStore.showMessage(firstError, true)
           } else {
-            this.$store.dispatch('showMessage', {
-              message: parsed.message,
-              isError: true,
-            })
+            this.mainStore.showMessage(parsed.message, true)
             this.$router.push('/reset').catch(handleNavigationError)
           }
 
@@ -174,20 +174,17 @@ export default {
         }
 
         if (rememberMe) {
-          this.$store.commit('SET_REMEMBER_ME', { rememberMe })
+          this.mainStore.rememberMe = rememberMe
         }
 
         localStorage.setItem('hasConnected', true)
-        this.$store.commit('SET_API_TOKEN', { apiToken: parsed.api_token })
+        this.mainStore.setApiToken(parsed.api_token)
 
         this.$router.push('/').catch(handleNavigationError)
       } catch (e) {
         console.error('Error getting response', e)
 
-        this.$store.dispatch('showMessage', {
-          message: this.$t('error.unknown'),
-          isError: true,
-        })
+        this.mainStore.showMessage(this.$t('error.unknown'), true)
       } finally {
         this.resetting = false
       }

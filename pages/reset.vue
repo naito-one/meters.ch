@@ -58,6 +58,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { handleNavigationError } from '../assets/utils'
 export default {
   middleware: 'not-auth',
@@ -65,7 +68,7 @@ export default {
     return {
       title: `${this.$t('pages.reset.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -93,7 +96,7 @@ export default {
       const email = event.target[0].value
 
       // hide a potential message
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       try {
         const res = await this.$get('/reset', {
@@ -109,15 +112,9 @@ export default {
           if (parsed.errors) {
             // get and show the first error message
             const firstError = Object.values(parsed.errors)[0][0]
-            this.$store.dispatch('showMessage', {
-              message: firstError,
-              isError: true,
-            })
+            this.mainStore.showMessage(firstError, true)
           } else {
-            this.$store.dispatch('showMessage', {
-              message: parsed.message,
-              isError: true,
-            })
+            this.mainStore.showMessage(parsed.message, true)
           }
 
           // stop here
@@ -125,24 +122,19 @@ export default {
         }
 
         // store the message then return to the login page
-
-        this.$store.dispatch('showMessage', {
-          message: parsed.message,
-          isError: false,
-        })
+        this.mainStore.showMessage(parsed.message, false)
 
         this.$router.push('/login').catch(handleNavigationError)
       } catch (e) {
         console.error('Error getting response', e)
-
-        this.$store.dispatch('showMessage', {
-          message: this.$t('error.unknown'),
-          isError: true,
-        })
+        this.mainStore.showMessage(this.$t('error.unknown'), true)
       } finally {
         this.resetting = false
       }
     },
+  },
+  computed: {
+    ...mapStores(useMainStore),
   },
 }
 </script>

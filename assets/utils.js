@@ -81,6 +81,10 @@ export function indexOnId(arrayWithIds) {
 
   return output
 }
+/**
+ * @param {{[x: string]: any}} input
+ * @returns {string[]}
+ */
 function swapKeyValues(input) {
   const output = []
   Object.entries(input).forEach(([key, value]) => (output[value] = key))

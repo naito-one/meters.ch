@@ -52,15 +52,17 @@
     <alert-popup
       :show="show"
       :mode="mode"
-      :current="$store.getters.alert({ alert_id: id })"
+      :current="mainStore.alert({ alert_id: id })"
       @cancel="popupCancel"
       @confirm="popupConfirm"
     ></alert-popup>
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { formatResource, handleNavigationError } from '../assets/utils'
-import { DateTime } from 'luxon'
 
 import AppHeader from '../components/app-header.vue'
 import AlertPopup from '../components/alert-popup.vue'
@@ -71,7 +73,7 @@ export default {
     return {
       title: `${this.$t('pages.alerts.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -112,7 +114,7 @@ export default {
     },
     create() {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.mode = 'create'
       this.show = true
@@ -121,7 +123,7 @@ export default {
     },
     update(id) {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.mode = 'edit'
       this.id = id
@@ -130,7 +132,7 @@ export default {
     },
     del(id) {
       // make sure to hide any messages
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       this.$delAlert({ id })
     },
@@ -164,15 +166,16 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
     alerts() {
       const locale = this.$numberLocale()
-      return this.$store.getters.alerts.map((alert) => {
+      return this.mainStore.alerts.map((alert) => {
         const out = {
           id: alert.id,
           value: '',
         }
 
-        const resource = this.$store.getters.resource(alert)
+        const resource = this.mainStore.resource(alert)
 
         if (resource === null) {
           return out

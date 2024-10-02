@@ -34,6 +34,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import AppHeader from '../components/app-header.vue'
 import MapPopup from '../components/map-popup.vue'
 import SearchSelect from '../components/search-select.vue'
@@ -47,7 +50,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 })
 
-import Vue from 'vue'
 import {
   handleNavigationError,
   removeTrailingSlash,
@@ -61,7 +63,7 @@ export default {
     return {
       title: `${this.$t('pages.map.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -75,6 +77,9 @@ export default {
   components: { AppHeader, MapPopup, SearchSelect },
   data() {
     return {
+      /**
+       * @type {L.Map}
+       */
       map: null,
       markers: [],
       activeResource: null,
@@ -224,7 +229,7 @@ export default {
         return
       }
 
-      const resource = this.$store.getters.resource({ resource_id: to })
+      const resource = this.mainStore.resource({ resource_id: to })
       this.map.setView([resource.lat, resource.lon], this.maxZ)
 
       this.$nextTick(() => {
@@ -233,16 +238,18 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
+
     resources() {
-      return this.$store.getters.resources.filter(
+      return this.mainStore.resources.filter(
         (resource) => resource.lat && resource.lon
       )
     },
     formattedResources() {
       return this.resources.map((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
-        const sensor = this.$store.getters.sensor(resource)
-        const site = this.$store.getters.site(sensor)
+        const resourceType = this.mainStore.resourceType(resource)
+        const sensor = this.mainStore.sensor(resource)
+        const site = this.mainStore.site(sensor)
         return {
           id: resource.id,
           value: formatResource(this.$i18n, resource, resourceType, site),

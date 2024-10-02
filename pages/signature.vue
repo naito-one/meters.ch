@@ -232,7 +232,9 @@
   </div>
 </template>
 <script>
-import { DateTime } from 'luxon'
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import {
   formatResource,
   signatureJsonToCsv,
@@ -258,7 +260,7 @@ export default {
     return {
       title: `${this.$t('pages.signature.title')} - Meters`,
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -311,7 +313,7 @@ export default {
     this.getQuery()
 
     // if there is a single site and none selected, select it automatically
-    if (this.$store.getters.numSites === 1 && this.site === -1) {
+    if (this.mainStore.numSites === 1 && this.site === -1) {
       this.site = this.formattedSites[0].id
     }
 
@@ -354,8 +356,8 @@ export default {
       // check site has a meteo location id
       if (
         !isNaN(site) &&
-        this.$store.state.dataById.sites[site] !== undefined &&
-        this.$store.state.dataById.sites[site].meteo_location_id !== null
+        this.mainStore.dataById.sites[site] !== undefined &&
+        this.mainStore.dataById.sites[site].meteo_location_id !== null
       ) {
         this.site = site
       }
@@ -363,11 +365,11 @@ export default {
       const temperature = parseInt(query.temperature)
       if (
         !isNaN(temperature) &&
-        this.$store.state.dataById.resources[temperature] !== undefined
+        this.mainStore.dataById.resources[temperature] !== undefined
       ) {
         // check is temperature resource
-        const resourceType = this.$store.getters.resourceType(
-          this.$store.state.dataById.resources[temperature]
+        const resourceType = this.mainStore.resourceType(
+          this.mainStore.dataById.resources[temperature]
         )
 
         if (resourceType && resourceType.name === 'Temperature') {
@@ -378,11 +380,11 @@ export default {
       const heater = parseInt(query.heater)
       if (
         !isNaN(heater) &&
-        this.$store.state.dataById.resources[heater] !== undefined
+        this.mainStore.dataById.resources[heater] !== undefined
       ) {
         // check is heater resource
-        const resourceType = this.$store.getters.resourceType(
-          this.$store.state.dataById.resources[heater]
+        const resourceType = this.mainStore.resourceType(
+          this.mainStore.dataById.resources[heater]
         )
 
         if (
@@ -464,10 +466,10 @@ export default {
         highlight: this.highlight,
       }
 
-      this.$store.commit('ADD_DASHBOARD_CHART', { element: payload })
+      this.mainStore.addDashboardChart(payload)
 
       this.$putUser(
-        { dashboard: JSON.stringify(this.$store.getters.dashboard) },
+        { dashboard: JSON.stringify(this.mainStore.dashboard) },
         this.$t('api.dashboard_updated'),
         3000
       )
@@ -511,6 +513,8 @@ export default {
     },
   },
   computed: {
+    ...mapStores(useMainStore),
+
     reverseSignaturePeriods() {
       return reverseSignaturePeriods
     },
@@ -532,7 +536,7 @@ export default {
     },
     formattedSites() {
       // meteo_location_id is nullable. don't include sites that don't have it
-      return this.$store.getters.sites
+      return this.mainStore.sites
         .filter((site) => site.meteo_location_id !== null)
         .map((site) => {
           return {
@@ -542,15 +546,15 @@ export default {
         })
     },
     allTemperatures() {
-      return this.$store.getters.resources.filter((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+      return this.mainStore.resources.filter((resource) => {
+        const resourceType = this.mainStore.resourceType(resource)
         return resourceType && resourceType.name === 'Temperature'
       })
     },
     formattedTemperatures() {
       return this.allTemperatures
         .filter((resource) => {
-          const sensor = this.$store.getters.sensor(resource)
+          const sensor = this.mainStore.sensor(resource)
           return sensor && sensor.site_id === this.site
         })
         .map((resource) => {
@@ -561,8 +565,8 @@ export default {
         })
     },
     allHeaters() {
-      return this.$store.getters.resources.filter((resource) => {
-        const resourceType = this.$store.getters.resourceType(resource)
+      return this.mainStore.resources.filter((resource) => {
+        const resourceType = this.mainStore.resourceType(resource)
         return (
           resourceType && HEATING_RESOURCE_TYPES.includes(resourceType.name)
         )
@@ -571,11 +575,11 @@ export default {
     formattedHeaters() {
       return this.allHeaters
         .filter((resource) => {
-          const sensor = this.$store.getters.sensor(resource)
+          const sensor = this.mainStore.sensor(resource)
           return sensor && sensor.site_id === this.site
         })
         .map((resource) => {
-          const resourceType = this.$store.getters.resourceType(resource)
+          const resourceType = this.mainStore.resourceType(resource)
           return {
             id: resource.id,
             value: formatResource(this.$i18n, resource, resourceType, null),
@@ -587,7 +591,7 @@ export default {
         return ''
       }
 
-      if (!this.$store.state.dataById.sites) {
+      if (!this.mainStore.dataById.sites) {
         return ''
       }
 
@@ -597,7 +601,7 @@ export default {
           period: reverseSignaturePeriods[this.period],
           offset: this.offset,
         },
-        this.$store.state.dataById.sites,
+        this.mainStore.dataById.sites,
         this.$i18n
       )
     },

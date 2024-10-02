@@ -92,7 +92,7 @@
     </form>
 
     <a
-      v-if="!isProbablyClient"
+      v-if="!mainStore.isProbablyClient"
       class="my-8 w-full sm:w-120 action bg-naito-blue-300 text-gray-100 text-center"
       href="https://naito.one/meters"
       v-text="$t('pages.login.new_client')"
@@ -100,6 +100,9 @@
   </div>
 </template>
 <script>
+import { mapStores } from 'pinia'
+import { useMainStore } from '../store/index'
+
 import { handleNavigationError } from '../assets/utils'
 export default {
   middleware: 'not-auth',
@@ -107,7 +110,7 @@ export default {
     return {
       title: this.$t('pages.login.title'),
       htmlAttrs: {
-        lang: this.$store.state.locale,
+        lang: this.mainStore.locale,
       },
       meta: [
         {
@@ -145,22 +148,30 @@ export default {
     },
   },
   methods: {
+    /**
+     * @param {SubmitEvent} event
+     */
     async login(event) {
       event.preventDefault()
 
+      /**
+       * @type {HTMLCollectionOf<HTMLInputElement>}
+       */
+      const target = event.target
+
       this.loggingIn = true
-      const email = event.target[0].value
-      const password = event.target[1].value
-      const rememberMe = event.target[2].checked
+      const email = target[0].value
+      const password = target[1].value
+      const rememberMe = target[2].checked
 
       // hide a potential message
-      this.$store.dispatch('hideMessage')
+      this.mainStore.hideMessage()
 
       try {
         const res = await this.$post('/login', {
           email,
           password,
-          remember_me: Boolean(rememberMe),
+          remember_me: rememberMe,
         })
 
         const parsed = await res.json()
@@ -174,15 +185,9 @@ export default {
           if (parsed.errors) {
             // get and show the first error message
             const firstError = Object.values(parsed.errors)[0][0]
-            this.$store.dispatch('showMessage', {
-              message: firstError,
-              isError: true,
-            })
+            this.mainStore.showMessage(firstError, true)
           } else {
-            this.$store.dispatch('showMessage', {
-              message: parsed.message,
-              isError: true,
-            })
+            this.mainStore.showMessage(parsed.message, true)
           }
 
           // stop here
@@ -190,32 +195,23 @@ export default {
         }
 
         if (rememberMe) {
-          this.$store.commit('SET_REMEMBER_ME', { rememberMe })
+          this.mainStore.rememberMe = rememberMe
         }
 
         localStorage.setItem('hasConnected', true)
-        this.$store.commit('SET_API_TOKEN', { apiToken: parsed.api_token })
+        this.mainStore.setApiToken(parsed.api_token)
 
         this.$router.push('/').catch(handleNavigationError)
       } catch (e) {
         console.error('Error getting response', e)
-
-        this.$store.dispatch('showMessage', {
-          message: this.$t('error.unknown'),
-          isError: true,
-        })
+        this.mainStore.showMessage(this.$t('error.unknown'), true)
       } finally {
         this.loggingIn = false
       }
     },
   },
   computed: {
-    /**
-     * @returns {boolean}
-     */
-    isProbablyClient() {
-      return this.$store.state.isProbablyClient
-    },
+    ...mapStores(useMainStore),
   },
 }
 </script>

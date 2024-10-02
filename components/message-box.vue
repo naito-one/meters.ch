@@ -1,11 +1,14 @@
 <template>
   <div :class="parenClasses">
     <div :class="classes">
-      <span class="text-center w-full" v-text="lastMessage"></span>
+      <span class="text-center w-full" v-text="messageBox.lastMessage"></span>
     </div>
   </div>
 </template>
 <script>
+import { mapState } from 'pinia'
+import { useMainStore } from '../store/index'
+
 export default {
   name: 'MessageBox',
   computed: {
@@ -13,7 +16,7 @@ export default {
       return [
         'w-5/6',
         'md:w-auto',
-        this.isError ? 'bg-red-600' : 'bg-green-600',
+        this.messageBox.isError ? 'bg-red-600' : 'bg-green-600',
         'text-gray-100',
         'p-4',
         'rounded-md',
@@ -21,7 +24,7 @@ export default {
         'flex',
         'transition-opacity-200',
       ].concat(
-        this.show
+        this.messageBox.show
           ? ['opacity-1', 'pointer-events-auto', 'notice-me-senpai']
           : ['opacity-0']
       )
@@ -39,24 +42,7 @@ export default {
         'pointer-events-none',
       ]
     },
-    /**
-     * @returns {boolean}
-     */
-    show() {
-      return this.$store.state.messageBox.show
-    },
-    /**
-     * @returns {string}
-     */
-    lastMessage() {
-      return this.$store.state.messageBox.lastMessage
-    },
-    /**
-     * @returns {boolean}
-     */
-    isError() {
-      return this.$store.state.messageBox.isError
-    },
+    ...mapState(useMainStore, ['messageBox']),
   },
 }
 </script>
