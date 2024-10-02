@@ -2,14 +2,6 @@ import config from './config'
 // copy the correct env file into the static folder
 config()
 
-const features = [
-  'es2015',
-  'es2016',
-  'URL',
-  'Promise.prototype.finally',
-  'IntersectionObserver',
-].join('%2C')
-
 export default {
   ssr: false,
   target: 'static',
@@ -39,10 +31,6 @@ export default {
     noscript: [{ innerHTML: 'This website requires JavaScript.' }],
 
     script: [
-      {
-        src: `https://polyfill.io/v3/polyfill.min.js?features=${features}`,
-        body: true,
-      },
       {
         // import the env file directly
         src: '/env.js',
@@ -106,8 +94,10 @@ export default {
   build: {
     extractCSS: true,
     postcss: {
-      plugins: {
-        tailwindcss: './tailwind.config.js',
+      postcssOptions: {
+        plugins: {
+          tailwindcss: './tailwind.config.js',
+        },
       },
     },
     /*

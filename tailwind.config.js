@@ -2,6 +2,7 @@
 const _ = require('lodash')
 
 module.exports = {
+  purge: false,
   theme: {
     transform: (theme, { negative }) => ({
       'none': '0',
